@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+removed_symlink=0
+tmpfile="${TMPDIR:-/tmp}/githooks-pre-commit.$$"
+trap 'rm -f "$tmpfile"' EXIT HUP INT TERM
+
+git ls-files -s | awk '$1 == "120000" { sub(/^[^\t]*\t/, ""); print }' > "$tmpfile"
+
+while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    git rm --cached --force --quiet -- "$path"
+    printf 'Removed staged symlink from Git index; kept local link: %s\n' "$path"
+    removed_symlink=1
+done < "$tmpfile"
+
+if [ "$removed_symlink" -eq 1 ]; then
+    echo "Symlinks will not be included in this commit."
+fi

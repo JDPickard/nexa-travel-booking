@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+[ "${3:-0}" = "1" ] || exit 0
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+if [ ! -f setup_symlinks.py ]; then
+    printf '%s\n' \
+        'Skipping AI setup: setup_symlinks.py is absent on this branch.'
+    exit 0
+fi
+
+PYTHONIOENCODING=utf-8
+export PYTHONIOENCODING
+
+if command -v py >/dev/null 2>&1; then
+    exec py -3 "$root/setup_symlinks.py"
+elif command -v python3 >/dev/null 2>&1; then
+    exec python3 "$root/setup_symlinks.py"
+else
+    printf '%s\n' \
+        'AI setup failed: Python 3 is required. Install Python 3 and rerun setup_symlinks.py.' >&2
+    exit 1
+fi
