@@ -9,20 +9,15 @@ import subprocess
 import filecmp
 from pathlib import Path
 
-# Mapping: source file/folder in the central AI guardrails submodule -> target location in the repo
+# Mapping: source folder in the AI guardrails submodule -> target location in the repo
 SYMLINK_MAP = [
-    # Main project instructions
-    (".github/demo-ai-guardrails/CLAUDE.md", "CLAUDE.md", False),
-    (".github/demo-ai-guardrails/AGENTS.md", "AGENTS.md", False),
-
     # GitHub Copilot specific configurations
-    (".github/demo-ai-guardrails/instructions", ".github/instructions", True),
-    (".github/demo-ai-guardrails/agents", ".github/agents", True),
-    (".github/demo-ai-guardrails/skills", ".github/skills", True),
+    (".github/demo-ai-guardrails/.github/instructions", ".github/instructions", True),
+    (".github/demo-ai-guardrails/.github/agents", ".github/agents", True),
+    (".github/demo-ai-guardrails/.github/skills", ".github/skills", True),
 
-    # Cross-harness fallbacks (Cursor & Claude Code)
-    (".github/demo-ai-guardrails/rules", ".cursor/rules", True),
-    (".github/demo-ai-guardrails/skills", ".claude/skills", True),
+    # Claude Code skills
+    (".github/demo-ai-guardrails/.github/skills", ".claude/skills", True),
 ]
 
 def create_symlink(
@@ -39,7 +34,7 @@ def create_symlink(
         print(f"⚠️  Skipping: Source '{source_rel}' does not exist in submodule.")
         return
 
-    # Keep target folders real so repo-specific entries can coexist with Ferry links.
+    # Keep target folders real so repo-specific entries can coexist with shared links.
     if source.is_dir() and (merge_directory or (target.is_dir() and not target.is_symlink())):
         if target.is_symlink():
             if target.resolve() != source:
@@ -94,19 +89,22 @@ def create_symlink(
             print(f"❌ Error linking {target_rel}: {e}")
 
 def enable_git_hooks(project_root: Path):
-    hook_path = project_root / ".githooks" / "pre-commit"
-    if not hook_path.is_file():
-        raise FileNotFoundError(f"Git pre-commit hook not found: {hook_path}")
+    hooks_dir = project_root / ".github" / ".githooks"
+    hook_names = ("post-checkout", "pre-commit")
+    hook_paths = [hooks_dir / hook_name for hook_name in hook_names]
 
-    if platform.system() != "Windows":
-        hook_path.chmod(hook_path.stat().st_mode | 0o111)
+    for hook_path in hook_paths:
+        if not hook_path.is_file():
+            raise FileNotFoundError(f"Git hook not found: {hook_path}")
+        if platform.system() != "Windows":
+            hook_path.chmod(hook_path.stat().st_mode | 0o111)
 
     subprocess.run(
-        ["git", "config", "--local", "core.hooksPath", ".githooks"],
+        ["git", "config", "--local", "core.hooksPath", ".github/.githooks"],
         cwd=project_root,
         check=True,
     )
-    print("✅ Enabled repository Git hooks from .githooks.")
+    print("✅ Enabled repository Git hooks from .github/.githooks.")
 
 def main():
     project_root = Path(__file__).parent.resolve()
