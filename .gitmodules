@@ -1,0 +1,3 @@
+[submodule ".github/demo-ai-guardrails"]
+	path = .github/demo-ai-guardrails
+	url = https://github.com/JDPickard/nexa-ai-guardrails.git
